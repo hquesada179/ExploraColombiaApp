@@ -1,5 +1,6 @@
 package com.helbertquesada.explora_colombia_app
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -31,28 +32,39 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.auth
 import com.helbertquesada.explora_colombia_app.ui.theme.Explora_Colombia_AppTheme
 
 
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit,
-    modifier: Modifier = Modifier,
-    onBackClick: () -> Unit = {}
+    onClickBack: () -> Unit = {},
+    onSuccessfulRegister: () -> Unit = {}
 ) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
+
+    var inputName by remember { mutableStateOf("") }
+    var inputEmail by remember { mutableStateOf("") }
+    var inputPassword by remember { mutableStateOf("") }
+    var inputPasswordConfirmation by remember { mutableStateOf("") }
     var acceptedTerms by remember { mutableStateOf(false) }
+
+    var nameError by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    var passwordConfirmationError by remember { mutableStateOf("") }
+    var registerError by remember { mutableStateOf("") }
 
     val primaryOrange = Color(0xFFE45D25)
     val lightGrayBg = Color(0xFFF8F9FE)
     val inputBg = Color(0xFFE5E5EA)
 
     Surface(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         color = lightGrayBg
     ) {
         Column(
@@ -63,7 +75,7 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             IconButton(
-                onClick = onBackClick,
+                onClick = onClickBack,
                 modifier = Modifier
                     .align(Alignment.Start)
                     .offset(x = (-12).dp)
@@ -108,47 +120,79 @@ fun RegisterScreen(
             Column(modifier = Modifier.fillMaxWidth()) {
                 RegisterField(
                     label = "NOMBRE COMPLETO",
-                    value = name,
-                    onValueChange = { name = it },
+                    value = inputName,
+                    onValueChange = { inputName = it },
                     placeholder = "Tu nombre",
                     leadingIcon = Icons.Default.Person,
                     inputBg = inputBg
                 )
+                if (nameError.isNotEmpty()) {
+                    Text(
+                        text = nameError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 RegisterField(
                     label = "CORREO ELECTRÓNICO",
-                    value = email,
-                    onValueChange = { email = it },
+                    value = inputEmail,
+                    onValueChange = { inputEmail = it },
                     placeholder = "hola@ejemplo.com",
                     leadingIcon = Icons.Default.Email,
                     inputBg = inputBg
                 )
+                if (emailError.isNotEmpty()) {
+                    Text(
+                        text = emailError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 RegisterField(
                     label = "CONTRASEÑA",
-                    value = password,
-                    onValueChange = { password = it },
+                    value = inputPassword,
+                    onValueChange = { inputPassword = it },
                     placeholder = "........",
                     leadingIcon = Icons.Default.Lock,
                     inputBg = inputBg,
                     isPassword = true
                 )
+                if (passwordError.isNotEmpty()) {
+                    Text(
+                        text = passwordError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 RegisterField(
                     label = "CONFIRMAR",
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    value = inputPasswordConfirmation,
+                    onValueChange = { inputPasswordConfirmation = it },
                     placeholder = "........",
                     leadingIcon = Icons.Default.Refresh,
                     inputBg = inputBg,
                     isPassword = true
                 )
+                if (passwordConfirmationError.isNotEmpty()) {
+                    Text(
+                        text = passwordConfirmationError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -179,7 +223,34 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onRegisterSuccess() },
+                onClick = {
+                    val isValidName = validateName(inputName).first
+                    val isValidEmail = validateEmail(inputEmail).first
+                    val isValidPassword = validatePassword(inputPassword).first
+                    val isValidConfirmPassword = validateConfirmPassword(inputPassword, inputPasswordConfirmation).first
+
+                    nameError = validateName(inputName).second
+                    emailError = validateEmail(inputEmail).second
+                    passwordError = validatePassword(inputPassword).second
+                    passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
+
+                    if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword) {
+                        auth.createUserWithEmailAndPassword(inputEmail, inputPassword)
+                            .addOnCompleteListener(activity) { task ->
+                                if (task.isSuccessful) {
+                                    onSuccessfulRegister()
+                                } else {
+                                    registerError = when (task.exception) {
+                                        is FirebaseAuthInvalidCredentialsException -> "Correo inválido"
+                                        is FirebaseAuthUserCollisionException -> "Este correo ya está registrado"
+                                        else -> "Hubo un error en el registro"
+                                    }
+                                }
+                            }
+                    } else {
+                        registerError = "Hubo un error en el registro"
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),
@@ -203,6 +274,16 @@ fun RegisterScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 }
+            }
+
+            if (registerError.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = registerError,
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -249,7 +330,7 @@ fun RegisterScreen(
                     color = primaryOrange,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onNavigateToLogin() }
+                    modifier = Modifier.clickable { onClickBack() }
                 )
             }
         }
@@ -302,6 +383,6 @@ fun RegisterField(
 @Composable
 fun RegisterScreenPreview() {
     Explora_Colombia_AppTheme () {
-        RegisterScreen(onRegisterSuccess = {}, onNavigateToLogin = {})
+        RegisterScreen(onClickBack = {}, onSuccessfulRegister = {})
     }
 }

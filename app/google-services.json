@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "525231892816",
+    "project_id": "loginfirebase-c0c47",
+    "storage_bucket": "loginfirebase-c0c47.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525231892816:android:675f4d5c104a759dde6455",
+        "android_client_info": {
+          "package_name": "com.helbertquesada.explora_colombia_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwX8L1nNDGDWoU0uIdpYooC1OAFGtkK44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

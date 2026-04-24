@@ -1,11 +1,14 @@
 package com.helbertquesada.explora_colombia_app
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Email
@@ -18,22 +21,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.auth
 import com.helbertquesada.explora_colombia_app.ui.theme.Explora_Colombia_AppTheme
 
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onSuccessfulLogin: () -> Unit = {},
+    onClickRegister: () -> Unit = {}
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
+
+    var inputEmail by remember { mutableStateOf("") }
+    var inputPassword by remember { mutableStateOf("") }
+    var emailError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    var loginError by remember { mutableStateOf("") }
 
     val primaryOrange = Color(0xFFE45D25)
     val lightGrayBg = Color(0xFFF8F9FE)
@@ -46,17 +61,17 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header Image with Rounded Corners
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
                     .clip(RoundedCornerShape(bottomStart = 60.dp, bottomEnd = 60.dp))
             ) {
-                // Placeholder for the landscape image
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -122,14 +137,19 @@ fun LoginScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
-                    value = email,
-                    onValueChange = { email = it },
+                    value = inputEmail,
+                    onValueChange = { inputEmail = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                         .clip(RoundedCornerShape(28.dp)),
                     placeholder = { Text("nombre@ejemplo.com", color = Color.Gray) },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = Color.Gray) },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.None,
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Email
+                    ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = inputBg,
                         unfocusedContainerColor = inputBg,
@@ -139,6 +159,14 @@ fun LoginScreen(
                     ),
                     singleLine = true
                 )
+                if (emailError.isNotEmpty()) {
+                    Text(
+                        text = emailError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -163,8 +191,8 @@ fun LoginScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 TextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = inputPassword,
+                    onValueChange = { inputPassword = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
@@ -173,7 +201,11 @@ fun LoginScreen(
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray) },
                     trailingIcon = { Icon(Icons.Default.Home, contentDescription = null, tint = Color.Gray) },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.None,
+                        autoCorrect = false,
+                        keyboardType = KeyboardType.Password
+                    ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = inputBg,
                         unfocusedContainerColor = inputBg,
@@ -183,11 +215,39 @@ fun LoginScreen(
                     ),
                     singleLine = true
                 )
+                if (passwordError.isNotEmpty()) {
+                    Text(
+                        text = passwordError,
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
-                    onClick = { onLoginSuccess() },
+                    onClick = {
+                        val isValidEmail = validateEmail(inputEmail).first
+                        val isValidPassword = validatePassword(inputPassword).first
+                        emailError = validateEmail(inputEmail).second
+                        passwordError = validatePassword(inputPassword).second
+
+                        if (isValidEmail && isValidPassword) {
+                            auth.signInWithEmailAndPassword(inputEmail, inputPassword)
+                                .addOnCompleteListener(activity) { task ->
+                                    if (task.isSuccessful) {
+                                        onSuccessfulLogin()
+                                    } else {
+                                        loginError = when (task.exception) {
+                                            is FirebaseAuthInvalidCredentialsException -> "Correo o contraseña incorrecta"
+                                            is FirebaseAuthInvalidUserException -> "No existe una cuenta con este correo"
+                                            else -> "Error al iniciar sesión. Intenta de nuevo"
+                                        }
+                                    }
+                                }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -211,6 +271,16 @@ fun LoginScreen(
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
                         }
                     }
+                }
+
+                if (loginError.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = loginError,
+                        color = Color.Red,
+                        fontSize = 13.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -244,7 +314,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Row {
                 Text(text = "¿No tienes cuenta? ", color = Color.Gray, fontSize = 14.sp)
@@ -253,7 +323,7 @@ fun LoginScreen(
                     color = primaryOrange,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { onNavigateToRegister() }
+                    modifier = Modifier.clickable { onClickRegister() }
                 )
             }
         }
@@ -279,7 +349,7 @@ fun SocialButton(text: String, modifier: Modifier = Modifier, icon: androidx.com
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    Explora_Colombia_AppTheme () {
-        LoginScreen(onLoginSuccess = {}, onNavigateToRegister = {})
+    Explora_Colombia_AppTheme {
+        LoginScreen(onSuccessfulLogin = {}, onClickRegister = {})
     }
 }
