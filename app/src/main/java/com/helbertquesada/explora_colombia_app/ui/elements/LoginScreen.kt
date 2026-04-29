@@ -1,4 +1,4 @@
-package com.helbertquesada.explora_colombia_app
+package com.helbertquesada.explora_colombia_app.ui.elements
 
 import android.app.Activity
 import androidx.compose.foundation.background
@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -34,6 +35,8 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.auth
 import com.helbertquesada.explora_colombia_app.ui.theme.Explora_Colombia_AppTheme
+import com.helbertquesada.explora_colombia_app.validateEmail
+import com.helbertquesada.explora_colombia_app.validatePassword
 
 
 @Composable
@@ -331,7 +334,7 @@ fun LoginScreen(
 }
 
 @Composable
-fun SocialButton(text: String, modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun SocialButton(text: String, modifier: Modifier = Modifier, icon: ImageVector) {
     OutlinedButton(
         onClick = { /* Handle social login */ },
         modifier = modifier.height(50.dp),

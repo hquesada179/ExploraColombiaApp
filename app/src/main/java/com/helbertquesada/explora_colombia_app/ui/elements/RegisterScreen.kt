@@ -1,4 +1,4 @@
-package com.helbertquesada.explora_colombia_app
+package com.helbertquesada.explora_colombia_app.ui.elements
 
 import android.app.Activity
 import androidx.compose.foundation.background
@@ -22,12 +22,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,6 +39,10 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.auth
 import com.helbertquesada.explora_colombia_app.ui.theme.Explora_Colombia_AppTheme
+import com.helbertquesada.explora_colombia_app.validateConfirmPassword
+import com.helbertquesada.explora_colombia_app.validateEmail
+import com.helbertquesada.explora_colombia_app.validateName
+import com.helbertquesada.explora_colombia_app.validatePassword
 
 
 @Composable
@@ -227,12 +233,18 @@ fun RegisterScreen(
                     val isValidName = validateName(inputName).first
                     val isValidEmail = validateEmail(inputEmail).first
                     val isValidPassword = validatePassword(inputPassword).first
-                    val isValidConfirmPassword = validateConfirmPassword(inputPassword, inputPasswordConfirmation).first
+                    val isValidConfirmPassword = validateConfirmPassword(
+                        inputPassword,
+                        inputPasswordConfirmation
+                    ).first
 
                     nameError = validateName(inputName).second
                     emailError = validateEmail(inputEmail).second
                     passwordError = validatePassword(inputPassword).second
-                    passwordConfirmationError = validateConfirmPassword(inputPassword, inputPasswordConfirmation).second
+                    passwordConfirmationError = validateConfirmPassword(
+                        inputPassword,
+                        inputPasswordConfirmation
+                    ).second
 
                     if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword) {
                         auth.createUserWithEmailAndPassword(inputEmail, inputPassword)
@@ -343,7 +355,7 @@ fun RegisterField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    leadingIcon: ImageVector,
     inputBg: Color,
     modifier: Modifier = Modifier,
     isPassword: Boolean = false
@@ -365,7 +377,7 @@ fun RegisterField(
                 .clip(RoundedCornerShape(28.dp)),
             placeholder = { Text(placeholder, color = Color.Gray) },
             leadingIcon = { Icon(leadingIcon, contentDescription = null, tint = Color.Gray) },
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = inputBg,

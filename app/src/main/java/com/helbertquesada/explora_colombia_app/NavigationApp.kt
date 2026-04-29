@@ -8,7 +8,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.helbertquesada.explora_colombia_app.ui.theme.HomeScreen
+import com.helbertquesada.explora_colombia_app.ui.elements.AddPlaceScreen
+import com.helbertquesada.explora_colombia_app.ui.elements.HomeScreen
+import com.helbertquesada.explora_colombia_app.ui.elements.LoginScreen
+import com.helbertquesada.explora_colombia_app.ui.elements.RegisterScreen
 
 @Composable
 fun NavigationApp() {
@@ -54,7 +57,17 @@ fun NavigationApp() {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
+
+                },
+                onClickAddPlace = {
+                    navController.navigate("add_place")
                 }
+            )
+        }
+
+        composable(route = "add_place") {
+            AddPlaceScreen(
+
             )
         }
     }
