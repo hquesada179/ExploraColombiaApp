@@ -61,4 +61,9 @@ dependencies {
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+
+    val nav_version = "2.9.7"
+    implementation("androidx.navigation:navigation-compose:$nav_version")
+
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
 }
