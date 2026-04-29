@@ -67,7 +67,9 @@ fun NavigationApp() {
 
         composable(route = "add_place") {
             AddPlaceScreen(
-
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
     }
